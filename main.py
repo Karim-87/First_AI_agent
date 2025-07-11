@@ -2,6 +2,7 @@ from agents import Agent, Runner, OpenAIChatCompletionsModel, AsyncOpenAI, RunCo
 
 import os
 from dotenv import load_dotenv
+import chainlit as cl
 
 load_dotenv()
 
@@ -28,11 +29,34 @@ agent = Agent(name="Frontend Expert",
 instructions="You are a frontend expert")
 
 
-result = Runner.run_sync(
-    agent,
-    input="what is your name",
-    run_config=config
-)
+# result = Runner.run_sync(
+#     input="what is your name",
+#     run_config=config
+# )
 
-print(result.final_output)
+# print(result.final_output)
 
+@cl.on_chat_start
+async def handle_start():
+    cl. user_session.set("history", [])
+    await cl.Message(content="Hello from Karim How can I help you?").send()
+
+
+
+
+
+@cl.on_message
+async def handle_message(message:cl.Message):
+
+    history = cl.user_session.get("history")
+
+    history.append({"role":"user", "content": message.content})
+    result = await Runner.run(
+        agent,
+        input = history,
+        run_config = config
+    )
+
+    history.append({"role":"assistant", "content": result.final_output})
+    await cl.Message(content=result.final_output).send()
+    
